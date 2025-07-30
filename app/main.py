@@ -69,7 +69,7 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
     carta_topo = jogo_atual.pilha_descarte[-1]
 
     # Validação básica: mesma cor ou mesmo valor
-    if carta_jogada.valor != "coringa" and carta_jogada.cor != carta_topo.cor and carta_jogada.valor != carta_topo.valor:
+    if carta_jogada.valor not in ["coringa", "+4"] and carta_jogada.cor != carta_topo.cor and carta_jogada.valor != carta_topo.valor:
         raise HTTPException(status_code=400, detail=f"Carta '{carta_jogada}' não pode ser jogada sobre '{carta_topo}'")
 
     # Joga a carta
@@ -101,6 +101,22 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
         carta_removida.cor = jogada.nova_cor.lower()
         mensagem_extra = f"Cor escolhida: {carta_removida.cor.capitalize()}"
         jogo_atual.proximo_turno()
+    elif carta_removida.valor == "+4":
+        if not jogada.nova_cor or jogada.nova_cor.lower() not in ["vermelho", "azul", "verde", "amarelo"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Cor inválida. Escolha entre: vermelho, azul, verde, amarelo."
+            )
+
+        # Define a nova cor na carta
+        carta_removida.cor = jogada.nova_cor.lower()
+
+        # Próximo jogador compra 4 cartas e perde a vez
+        vitima = jogo_atual.jogador_atual()
+        vitima.comprar_carta(jogo_atual.baralho, qtd=4)
+        mensagem_extra = f"{vitima.nome} comprou 4 cartas e perdeu a vez. Cor escolhida: {carta_removida.cor.capitalize()}"
+        jogo_atual.proximo_turno()
+
     else:
         mensagem_extra = None
 
