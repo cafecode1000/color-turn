@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.game import JogoUNO
 
+
 app = FastAPI(title="UNO Game API", version="0.1.0")
 
 # Guardar o jogo atual (temporário - depois usaremos algo mais robusto)
@@ -11,6 +12,7 @@ def novo_jogo(jogadores: list[str]):
     global jogo_atual
     jogo_atual = JogoUNO(jogadores)
     return {"mensagem": "Jogo iniciado!", "topo": str(jogo_atual.pilha_descarte[-1])}
+
 
 @app.get("/estado")
 def estado():
@@ -25,6 +27,7 @@ def estado():
     }
 
 from fastapi import HTTPException
+
 
 @app.post("/comprar/{nome_jogador}")
 def comprar_carta(nome_jogador: str):
@@ -49,12 +52,15 @@ from pydantic import BaseModel
 class JogarCartaRequest(BaseModel):
     indice: int  # posição da carta na mão
     nova_cor: str | None = None  # usada apenas para cartas coringa
+    
 
 @app.post("/jogar/{nome_jogador}")
 def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
+    # Primeiro, verifica se o jogo existe
     if not jogo_atual:
         raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
-
+    
+    # Agora procura o jogador no turno
     jogador = next((j for j in jogo_atual.jogadores if j.nome == nome_jogador), None)
     if not jogador:
         raise HTTPException(status_code=404, detail="Jogador não encontrado")
@@ -120,7 +126,13 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
 
     else:
         mensagem_extra = None
-
+    
+    # Verifica a vitória
+    if len(jogador.mao) == 0:
+        return {
+            "mensagem": f"{jogador.nome} venceu o jogo!",
+            "vencedor": jogador.nome
+        }
 
     return {
         "mensagem": f"{nome_jogador} jogou {carta_removida}",
