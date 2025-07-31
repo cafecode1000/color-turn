@@ -97,8 +97,9 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
         if not jogada.nova_cor or jogada.nova_cor.lower() not in ["vermelho", "azul", "verde", "amarelo"]:
             raise HTTPException(status_code=400, detail="Cor inválida. Escolha entre: vermelho, azul, verde, amarelo.")
         
-        # Trocar temporariamente a cor da carta coringa
+        # Atualiza a cor da carta para a escolhida
         carta_removida.cor = jogada.nova_cor.lower()
+
         mensagem_extra = f"Cor escolhida: {carta_removida.cor.capitalize()}"
         jogo_atual.proximo_turno()
     elif carta_removida.valor == "+4":
