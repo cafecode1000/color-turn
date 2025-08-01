@@ -1,6 +1,6 @@
-# 🃏 Projeto UNO com FastAPI
+# 🎨 Projeto ColorTurn com FastAPI
 
-Este é um jogo UNO multiplayer desenvolvido com **Python** e **FastAPI**, rodando localmente e idealmente hospedado em um VPS com domínio próprio. O objetivo é reproduzir as regras clássicas do UNO e adicionar funcionalidades modernas, como API REST, WebSockets, e regras personalizadas.
+Este é um jogo multiplayer baseado em cartas de cores, desenvolvido com **Python** e **FastAPI**, rodando localmente e idealmente hospedado em um VPS com domínio próprio. O objetivo é reproduzir as regras clássicas de jogos como UNO e adicionar funcionalidades modernas, como API REST, WebSockets, e regras personalizadas.
 
 ---
 
@@ -25,11 +25,11 @@ Agora com **desafio ao +4** implementado corretamente segundo a regra oficial!
 ## 📁 Estrutura do Projeto
 
 ```
-uno_game/
+color_turn/
 │
 ├── app/
 │   ├── main.py         # Entradas da API FastAPI
-│   ├── game.py         # Lógica do UNO (Carta, Baralho, Jogador, JogoUNO)
+│   ├── game.py         # Lógica do jogo (Carta, Baralho, Jogador, Jogo)
 │   ├── websocket.py    # (em breve) Comunicação em tempo real
 │   └── models.py       # Pydantic Models (requests/responses)
 │
@@ -122,5 +122,7 @@ Abra no navegador: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 ---
 
 ## ☕ Desenvolvido por Júnior (cafecode.com.br)
+
+Este projeto é inspirado nas regras públicas do jogo de cartas UNO, mas não utiliza material oficial da Mattel.
 
 Em constante evolução e com espírito de aprendizado e diversão.
