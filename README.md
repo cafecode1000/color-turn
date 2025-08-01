@@ -4,6 +4,11 @@ Este é um jogo UNO multiplayer desenvolvido com **Python** e **FastAPI**, rodan
 
 ---
 
+## ✨ Novidade!
+Agora com **desafio ao +4** implementado!
+
+---
+
 ## 🚀 Tecnologias Utilizadas
 
 - Python 3.13+
@@ -51,6 +56,7 @@ uno_game/
 - **Detecção de vitória automática**
 - **Dizer "UNO" com 1 carta**
 - **Penalidade por esquecer "UNO"**
+- **Desafio ao +4 implementado!**
 
 ---
 
@@ -66,22 +72,34 @@ uno_game/
   - Jogador compra uma carta, verifica se pode jogar
 - `POST /uno/{nome_jogador}`
   - Jogador declara "UNO" ao ficar com uma única carta
+- `POST /desafiar/{nome_jogador}`
+  - Jogador desafia o uso do +4 jogado contra ele
 
 ---
 
-## 🎯 Regra do "UNO!"
+## 🎯 Regras Especiais
+
+### Regra do "UNO!"
 
 - Se o jogador terminar sua jogada com **1 carta na mão**:
   - Ele deve chamar `POST /uno/{nome_jogador}` antes de jogar.
   - Se **não declarar**, será **penalizado com 2 cartas automaticamente**.
   - Se declarar corretamente, o sistema registra e não aplica penalidade.
-- O atributo `disse_uno` é **resetado automaticamente** ao final de cada jogada.
+  - O atributo `disse_uno` é **resetado automaticamente** ao final de cada jogada.
+
+### Regra do Desafio ao +4
+
+- Se um jogador jogar um **+4**, o próximo pode chamar:
+  - `POST /desafiar/{nome_jogador}`
+- O sistema verifica se quem jogou o +4 **tinha cartas da cor anterior**:
+  - Se **sim**: desafio válido → quem jogou compra 4 cartas.
+  - Se **não**: desafio falha → desafiante compra 6 cartas.
+- Se ninguém desafiar, o próximo jogador deve aceitar o +4 normalmente.
 
 ---
 
 ## 🛠️ Melhorias Futuras
 
-- Implementar **desafio ao +4**
 - Transformar em **jogo multiplayer real com WebSockets**
 - Criar frontend em HTML ou React para visualização em tempo real
 - Persistência com banco de dados para partidas

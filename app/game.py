@@ -68,6 +68,8 @@ class JogoUNO:
         self.pilha_descarte = []
         self.direcao = 1  # 1 = horário, -1 = anti-horário
         self.turno_atual = 0
+        self.ultimo_desafio = None  # Guarda info temporária de desafio ao +4
+
 
         # Distribuir 7 cartas a cada jogador
         for jogador in self.jogadores:
@@ -100,3 +102,10 @@ class JogoUNO:
         self.baralho.cartas = recicladas
         self.pilha_descarte = [topo]
         return True
+
+    def registrar_desafio_mais_quatro(self, jogador_que_jogou, vitima):
+        self.ultimo_desafio = {
+            "jogador_que_jogou": jogador_que_jogou,
+            "vitima": vitima,
+            "mao_antes": list(jogador_que_jogou.mao)  # cópia da mão antes da jogada
+        }
