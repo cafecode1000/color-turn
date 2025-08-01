@@ -109,3 +109,6 @@ class JogoUNO:
             "vitima": vitima,
             "mao_antes": list(jogador_que_jogou.mao)  # cópia da mão antes da jogada
         }
+
+
+##

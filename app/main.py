@@ -238,3 +238,4 @@ def desafiar_mais_quatro(nome_jogador: str):
     jogo_atual.ultimo_desafio = None
 
     return {"resultado": resultado, "proximo_jogador": jogo_atual.jogador_atual().nome}
+##
