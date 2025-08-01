@@ -42,10 +42,14 @@ class Jogador:
         self.mao = []
 
     def comprar_carta(self, baralho: Baralho, qtd=1):
+        cartas_compradas = []
         for _ in range(qtd):
             carta = baralho.comprar()
             if carta:
                 self.mao.append(carta)
+                cartas_compradas.append(carta)
+        return cartas_compradas
+
 
     def jogar_carta(self, indice: int):
         if 0 <= indice < len(self.mao):
@@ -83,3 +87,15 @@ class JogoUNO:
 
     def __repr__(self):
         return f"JogoUNO(Turno de {self.jogador_atual().nome}, Topo: {self.pilha_descarte[-1]})"
+
+    def reciclar_pilha(self):
+        if len(self.pilha_descarte) <= 1:
+            return False  # Nada para reciclar
+
+        topo = self.pilha_descarte[-1]
+        recicladas = self.pilha_descarte[:-1]
+        random.shuffle(recicladas)
+
+        self.baralho.cartas = recicladas
+        self.pilha_descarte = [topo]
+        return True

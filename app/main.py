@@ -34,18 +34,47 @@ def comprar_carta(nome_jogador: str):
     if not jogo_atual:
         raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
 
-    # Encontrar jogador pelo nome
     jogador = next((j for j in jogo_atual.jogadores if j.nome == nome_jogador), None)
     if not jogador:
         raise HTTPException(status_code=404, detail="Jogador não encontrado")
 
-    # Jogador compra 1 carta
-    jogador.comprar_carta(jogo_atual.baralho, qtd=1)
+    if jogador != jogo_atual.jogador_atual():
+        raise HTTPException(status_code=403, detail="Não é o turno deste jogador")
+
+    cartas = jogador.comprar_carta(jogo_atual.baralho, qtd=1)
+
+    if not cartas:
+        reciclou = jogo_atual.reciclar_pilha()
+        if reciclou:
+            cartas = jogador.comprar_carta(jogo_atual.baralho, qtd=1)
+        if not cartas:
+            raise HTTPException(status_code=400, detail="Sem cartas no baralho nem na pilha de descarte")
+
+    carta = cartas[0] if cartas else None
+    topo = jogo_atual.pilha_descarte[-1]
+
+    pode_jogar = (
+        carta and (
+            carta.cor == topo.cor or
+            carta.valor == topo.valor or
+            carta.cor == "preto"
+        )
+    )
+
+    mensagem = f"{nome_jogador} comprou uma carta"
+    if not pode_jogar:
+        jogo_atual.proximo_turno()
+        mensagem += " e passou a vez"
+
     return {
-        "mensagem": f"{nome_jogador} comprou uma carta",
+        "mensagem": mensagem,
+        "carta_comprada": str(carta) if carta else "Nenhuma",
+        "pode_jogar": pode_jogar,
         "mao": [str(c) for c in jogador.mao],
-        "cartas_restantes_baralho": len(jogo_atual.baralho.cartas)
+        "proximo_jogador": jogo_atual.jogador_atual().nome if not pode_jogar else nome_jogador
     }
+
+
 
 from pydantic import BaseModel
 
