@@ -161,11 +161,8 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
         vitima = jogo_atual.jogador_atual()
 
         # REGISTRA desafio pendente antes da vítima comprar cartas
-        jogo_atual.registrar_desafio_mais_quatro(jogador, vitima)
-
+        jogo_atual.registrar_desafio_mais_quatro(jogador, vitima, cor_pilha_anterior=carta_topo.cor)
         mensagem_extra = f"{vitima.nome} pode desafiar o +4. Cor escolhida: {carta_removida.cor.capitalize()}"
-
-
     else:
         mensagem_extra = None
     
@@ -212,6 +209,8 @@ def declarar_uno(nome_jogador: str):
 
 # NOVA ROTA: desafio ao +4
 
+# NOVA ROTA: desafio ao +4
+
 @app.post("/desafiar/{nome_jogador}")
 def desafiar_mais_quatro(nome_jogador: str):
     if not jogo_atual or not jogo_atual.ultimo_desafio:
@@ -223,13 +222,13 @@ def desafiar_mais_quatro(nome_jogador: str):
 
     mao_antes = contexto["mao_antes"]
     jogador_que_jogou = contexto["jogador_que_jogou"]
-    cor_atual = jogo_atual.pilha_descarte[-1].cor
+    cor_anterior = contexto["cor_anterior"]
 
-    tinha_cor = any(carta.cor == cor_atual for carta in mao_antes if carta.cor != "preto")
+    tinha_cor = any(carta.cor == cor_anterior for carta in mao_antes if carta.cor != "preto")
 
     if tinha_cor:
         jogador_que_jogou.comprar_carta(jogo_atual.baralho, qtd=4)
-        resultado = f"{jogador_que_jogou.nome} tinha a cor {cor_atual}! Comprou 4 cartas como penalidade."
+        resultado = f"{jogador_que_jogou.nome} tinha a cor {cor_anterior}! Comprou 4 cartas como penalidade."
     else:
         contexto["vitima"].comprar_carta(jogo_atual.baralho, qtd=6)
         resultado = f"Desafio falhou. {nome_jogador} comprou 6 cartas."
@@ -238,4 +237,3 @@ def desafiar_mais_quatro(nome_jogador: str):
     jogo_atual.ultimo_desafio = None
 
     return {"resultado": resultado, "proximo_jogador": jogo_atual.jogador_atual().nome}
-##

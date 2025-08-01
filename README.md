@@ -5,7 +5,7 @@ Este é um jogo UNO multiplayer desenvolvido com **Python** e **FastAPI**, rodan
 ---
 
 ## ✨ Novidade!
-Agora com **desafio ao +4** implementado!
+Agora com **desafio ao +4** implementado corretamente segundo a regra oficial!
 
 ---
 
@@ -91,7 +91,7 @@ uno_game/
 
 - Se um jogador jogar um **+4**, o próximo pode chamar:
   - `POST /desafiar/{nome_jogador}`
-- O sistema verifica se quem jogou o +4 **tinha cartas da cor anterior**:
+- O sistema verifica se quem jogou o +4 **tinha cartas da cor que estava em jogo antes da jogada** (e **não da cor escolhida**):
   - Se **sim**: desafio válido → quem jogou compra 4 cartas.
   - Se **não**: desafio falha → desafiante compra 6 cartas.
 - Se ninguém desafiar, o próximo jogador deve aceitar o +4 normalmente.
@@ -124,5 +124,3 @@ Abra no navegador: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 ## ☕ Desenvolvido por Júnior (cafecode.com.br)
 
 Em constante evolução e com espírito de aprendizado e diversão.
----
----

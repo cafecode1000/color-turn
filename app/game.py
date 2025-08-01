@@ -103,12 +103,11 @@ class JogoUNO:
         self.pilha_descarte = [topo]
         return True
 
-    def registrar_desafio_mais_quatro(self, jogador_que_jogou, vitima):
+    def registrar_desafio_mais_quatro(self, jogador_que_jogou, vitima, cor_pilha_anterior):
         self.ultimo_desafio = {
             "jogador_que_jogou": jogador_que_jogou,
             "vitima": vitima,
-            "mao_antes": list(jogador_que_jogou.mao)  # cópia da mão antes da jogada
+            "mao_antes": list(jogador_que_jogou.mao),
+            "cor_anterior": cor_pilha_anterior
         }
-
-
-##
+        
