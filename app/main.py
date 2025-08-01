@@ -156,14 +156,15 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
                 detail="Cor inválida. Escolha entre: vermelho, azul, verde, amarelo."
             )
 
-        # Define a nova cor na carta
         carta_removida.cor = jogada.nova_cor.lower()
 
-        # Próximo jogador compra 4 cartas e perde a vez
         vitima = jogo_atual.jogador_atual()
-        vitima.comprar_carta(jogo_atual.baralho, qtd=4)
-        mensagem_extra = f"{vitima.nome} comprou 4 cartas e perdeu a vez. Cor escolhida: {carta_removida.cor.capitalize()}"
-        jogo_atual.proximo_turno()
+
+        # REGISTRA desafio pendente antes da vítima comprar cartas
+        jogo_atual.registrar_desafio_mais_quatro(jogador, vitima)
+
+        mensagem_extra = f"{vitima.nome} pode desafiar o +4. Cor escolhida: {carta_removida.cor.capitalize()}"
+
 
     else:
         mensagem_extra = None
@@ -207,3 +208,33 @@ def declarar_uno(nome_jogador: str):
 
     jogador.disse_uno = True
     return {"message": f"{jogador.nome} declarou UNO!"}
+
+
+# NOVA ROTA: desafio ao +4
+
+@app.post("/desafiar/{nome_jogador}")
+def desafiar_mais_quatro(nome_jogador: str):
+    if not jogo_atual or not jogo_atual.ultimo_desafio:
+        raise HTTPException(status_code=400, detail="Nenhum desafio pendente")
+
+    contexto = jogo_atual.ultimo_desafio
+    if contexto["vitima"].nome != nome_jogador:
+        raise HTTPException(status_code=403, detail="Apenas a vítima do +4 pode desafiar")
+
+    mao_antes = contexto["mao_antes"]
+    jogador_que_jogou = contexto["jogador_que_jogou"]
+    cor_atual = jogo_atual.pilha_descarte[-1].cor
+
+    tinha_cor = any(carta.cor == cor_atual for carta in mao_antes if carta.cor != "preto")
+
+    if tinha_cor:
+        jogador_que_jogou.comprar_carta(jogo_atual.baralho, qtd=4)
+        resultado = f"{jogador_que_jogou.nome} tinha a cor {cor_atual}! Comprou 4 cartas como penalidade."
+    else:
+        contexto["vitima"].comprar_carta(jogo_atual.baralho, qtd=6)
+        resultado = f"Desafio falhou. {nome_jogador} comprou 6 cartas."
+
+    jogo_atual.proximo_turno()
+    jogo_atual.ultimo_desafio = None
+
+    return {"resultado": resultado, "proximo_jogador": jogo_atual.jogador_atual().nome}
