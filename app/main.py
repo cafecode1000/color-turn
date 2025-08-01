@@ -111,6 +111,18 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
     carta_removida = jogador.jogar_carta(jogada.indice)
     jogo_atual.pilha_descarte.append(carta_removida)
 
+    # Verifica se o jogador ficou com 1 carta após jogar
+    mensagem_uno = None
+    if len(jogador.mao) == 1:
+        if not jogador.disse_uno:
+            # Penalidade por não dizer UNO
+            cartas_penalidade = jogo_atual.comprar_cartas(2)
+            jogador.mao.extend(cartas_penalidade)
+            mensagem_uno = f"{jogador.nome} esqueceu de dizer UNO! Comprou 2 cartas como penalidade."
+        else:
+            mensagem_uno = f"{jogador.nome} declarou UNO corretamente!"
+
+
     # Avança o turno normalmente
     jogo_atual.proximo_turno()
 
@@ -156,6 +168,10 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
     else:
         mensagem_extra = None
     
+    # Após a jogada, todos os jogadores devem ter 'disse_uno' resetado
+    for j in jogo_atual.jogadores:
+        j.disse_uno = False
+
     # Verifica a vitória
     if len(jogador.mao) == 0:
         return {
@@ -163,9 +179,31 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
             "vencedor": jogador.nome
         }
 
-    return {
+    resposta = {
         "mensagem": f"{nome_jogador} jogou {carta_removida}",
         "novo_topo": str(carta_removida),
         "proximo_jogador": jogo_atual.jogador_atual().nome,
         "efeito": mensagem_extra
     }
+
+    if mensagem_uno:
+        resposta["uno"] = mensagem_uno
+
+    return resposta
+
+
+
+@app.post("/uno/{nome_jogador}")
+def declarar_uno(nome_jogador: str):
+    if not jogo_atual:
+        raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
+
+    jogador = next((j for j in jogo_atual.jogadores if j.nome == nome_jogador), None)
+    if not jogador:
+        raise HTTPException(status_code=404, detail="Jogador não encontrado")
+
+    if len(jogador.mao) != 1:
+        raise HTTPException(status_code=400, detail="Você só pode declarar UNO quando tiver exatamente 1 carta")
+
+    jogador.disse_uno = True
+    return {"message": f"{jogador.nome} declarou UNO!"}

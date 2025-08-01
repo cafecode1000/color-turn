@@ -40,6 +40,7 @@ class Jogador:
     def __init__(self, nome: str):
         self.nome = nome
         self.mao = []
+        self.disse_uno = False  # Novo atributo para rastrear se declarou "UNO!"
 
     def comprar_carta(self, baralho: Baralho, qtd=1):
         cartas_compradas = []
