@@ -49,9 +49,8 @@ uno_game/
 - Carta comprada só pode ser usada se compatível, senão perde a vez
 - Baralho se recicla automaticamente com a pilha de descarte (exceto carta do topo)
 - **Detecção de vitória automática**
-- **Desafio +4** (em breve)
-- **Dizer "UNO" com 1 carta** (em breve)
-- **Penalidade por esquecer "UNO"** (em breve)
+- **Dizer "UNO" com 1 carta**
+- **Penalidade por esquecer "UNO"**
 
 ---
 
@@ -65,14 +64,24 @@ uno_game/
   - Jogador joga uma carta da mão
 - `POST /comprar/{nome_jogador}`
   - Jogador compra uma carta, verifica se pode jogar
+- `POST /uno/{nome_jogador}`
+  - Jogador declara "UNO" ao ficar com uma única carta
+
+---
+
+## 🎯 Regra do "UNO!"
+
+- Se o jogador terminar sua jogada com **1 carta na mão**:
+  - Ele deve chamar `POST /uno/{nome_jogador}` antes de jogar.
+  - Se **não declarar**, será **penalizado com 2 cartas automaticamente**.
+  - Se declarar corretamente, o sistema registra e não aplica penalidade.
+- O atributo `disse_uno` é **resetado automaticamente** ao final de cada jogada.
 
 ---
 
 ## 🛠️ Melhorias Futuras
 
 - Implementar **desafio ao +4**
-- Adicionar opção para o jogador dizer `"UNO"`
-- Penalizar quem esquecer de dizer "UNO"
 - Transformar em **jogo multiplayer real com WebSockets**
 - Criar frontend em HTML ou React para visualização em tempo real
 - Persistência com banco de dados para partidas
