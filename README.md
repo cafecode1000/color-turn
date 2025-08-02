@@ -1,11 +1,6 @@
-# 🎨 Projeto ColorTurn com FastAPI
+# 🃏 Projeto UNO com FastAPI
 
-Este é um jogo multiplayer baseado em cartas de cores, desenvolvido com **Python** e **FastAPI**, rodando localmente e idealmente hospedado em um VPS com domínio próprio. O objetivo é reproduzir as regras clássicas de jogos como UNO e adicionar funcionalidades modernas, como API REST, WebSockets, e regras personalizadas.
-
----
-
-## ✨ Novidade!
-Agora com **desafio ao +4** implementado corretamente segundo a regra oficial!
+Este é um jogo UNO multiplayer desenvolvido com **Python** e **FastAPI**, rodando localmente e idealmente hospedado em um VPS com domínio próprio. O objetivo é reproduzir as regras clássicas do UNO e adicionar funcionalidades modernas, como API REST, WebSockets, e regras personalizadas.
 
 ---
 
@@ -25,11 +20,11 @@ Agora com **desafio ao +4** implementado corretamente segundo a regra oficial!
 ## 📁 Estrutura do Projeto
 
 ```
-color_turn/
+uno_game/
 │
 ├── app/
 │   ├── main.py         # Entradas da API FastAPI
-│   ├── game.py         # Lógica do jogo (Carta, Baralho, Jogador, Jogo)
+│   ├── game.py         # Lógica do UNO (Carta, Baralho, Jogador, JogoUNO)
 │   ├── websocket.py    # (em breve) Comunicação em tempo real
 │   └── models.py       # Pydantic Models (requests/responses)
 │
@@ -55,7 +50,7 @@ color_turn/
 - Baralho se recicla automaticamente com a pilha de descarte (exceto carta do topo)
 - **Detecção de vitória automática**
 - **Dizer "UNO" com 1 carta**
-- **Penalidade por esquecer "UNO"**
+- **Penalidade por esquecer "UNO"** (ver detalhes abaixo)
 - **Desafio ao +4 implementado!**
 
 ---
@@ -69,7 +64,7 @@ color_turn/
 - `POST /jogar/{nome_jogador}`
   - Jogador joga uma carta da mão
 - `POST /comprar/{nome_jogador}`
-  - Jogador compra uma carta e perde a vez
+  - Jogador compra uma carta, verifica se pode jogar
 - `POST /uno/{nome_jogador}`
   - Jogador declara "UNO" ao ficar com uma única carta
 - `POST /desafiar/{nome_jogador}`
@@ -77,30 +72,18 @@ color_turn/
 
 ---
 
-## 🎯 Regras Especiais
-
-### Regra do "UNO!"
+## 🎯 Regra do "UNO!"
 
 - Se o jogador terminar sua jogada com **1 carta na mão**:
-  - Ele deve chamar `POST /uno/{nome_jogador}` antes de jogar.
-  - Se **não declarar**, será **penalizado com 2 cartas automaticamente**.
+  - Ele **pode** chamar `POST /uno/{nome_jogador}` **antes do fim de seu turno** (inclusive após um desafio ao +4).
+  - Se **não declarar**, será **penalizado com 2 cartas automaticamente** **apenas após o turno terminar**, desde que não tenha vencido.
   - Se declarar corretamente, o sistema registra e não aplica penalidade.
-  - O atributo `disse_uno` é **resetado automaticamente** ao final de cada jogada.
-
-### Regra do Desafio ao +4
-
-- Se um jogador jogar um **+4**, o próximo pode chamar:
-  - `POST /desafiar/{nome_jogador}`
-- O sistema verifica se quem jogou o +4 **tinha cartas da cor que estava em jogo antes da jogada** (e **não da cor escolhida**):
-  - Se **sim**: desafio válido → quem jogou compra 4 cartas.
-  - Se **não**: desafio falha → desafiante compra 6 cartas.
-- Se ninguém desafiar, o próximo jogador deve aceitar o +4 normalmente.
+  - O atributo `disse_uno` é **resetado automaticamente** ao final da jogada.
 
 ---
 
 ## 🛠️ Melhorias Futuras
 
-- Implementar rota `/comprar-e-jogar` para permitir ao jogador jogar imediatamente a carta recém-comprada
 - Transformar em **jogo multiplayer real com WebSockets**
 - Criar frontend em HTML ou React para visualização em tempo real
 - Persistência com banco de dados para partidas
@@ -123,7 +106,5 @@ Abra no navegador: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 ---
 
 ## ☕ Desenvolvido por Júnior (cafecode.com.br)
-
-Este projeto é inspirado nas regras públicas do jogo de cartas UNO, mas não utiliza material oficial da Mattel.
 
 Em constante evolução e com espírito de aprendizado e diversão.
