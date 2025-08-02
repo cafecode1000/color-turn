@@ -69,7 +69,7 @@ color_turn/
 - `POST /jogar/{nome_jogador}`
   - Jogador joga uma carta da mão
 - `POST /comprar/{nome_jogador}`
-  - Jogador compra uma carta, verifica se pode jogar
+  - Jogador compra uma carta e perde a vez
 - `POST /uno/{nome_jogador}`
   - Jogador declara "UNO" ao ficar com uma única carta
 - `POST /desafiar/{nome_jogador}`
@@ -100,6 +100,7 @@ color_turn/
 
 ## 🛠️ Melhorias Futuras
 
+- Implementar rota `/comprar-e-jogar` para permitir ao jogador jogar imediatamente a carta recém-comprada
 - Transformar em **jogo multiplayer real com WebSockets**
 - Criar frontend em HTML ou React para visualização em tempo real
 - Persistência com banco de dados para partidas

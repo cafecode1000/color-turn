@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.game import JogoUNO
+from app.game import JogoUNO, Carta
 
 
 app = FastAPI(title="UNO Game API", version="0.1.0")
@@ -62,18 +62,16 @@ def comprar_carta(nome_jogador: str):
     )
 
     mensagem = f"{nome_jogador} comprou uma carta"
-    if not pode_jogar:
-        jogo_atual.proximo_turno()
-        mensagem += " e passou a vez"
+    jogo_atual.proximo_turno()
+    mensagem += " e passou a vez"
 
     return {
         "mensagem": mensagem,
         "carta_comprada": str(carta) if carta else "Nenhuma",
         "pode_jogar": pode_jogar,
         "mao": [str(c) for c in jogador.mao],
-        "proximo_jogador": jogo_atual.jogador_atual().nome if not pode_jogar else nome_jogador
+        "proximo_jogador": jogo_atual.jogador_atual().nome
     }
-
 
 
 from pydantic import BaseModel
@@ -85,11 +83,9 @@ class JogarCartaRequest(BaseModel):
 
 @app.post("/jogar/{nome_jogador}")
 def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
-    # Primeiro, verifica se o jogo existe
     if not jogo_atual:
         raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
-    
-    # Agora procura o jogador no turno
+
     jogador = next((j for j in jogo_atual.jogadores if j.nome == nome_jogador), None)
     if not jogador:
         raise HTTPException(status_code=404, detail="Jogador não encontrado")
@@ -103,52 +99,54 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
     carta_jogada = jogador.mao[jogada.indice]
     carta_topo = jogo_atual.pilha_descarte[-1]
 
-    # Validação básica: mesma cor ou mesmo valor
     if carta_jogada.valor not in ["coringa", "+4"] and carta_jogada.cor != carta_topo.cor and carta_jogada.valor != carta_topo.valor:
         raise HTTPException(status_code=400, detail=f"Carta '{carta_jogada}' não pode ser jogada sobre '{carta_topo}'")
 
-    # Joga a carta
     carta_removida = jogador.jogar_carta(jogada.indice)
-    jogo_atual.pilha_descarte.append(carta_removida)
 
-    # Verifica se o jogador ficou com 1 carta após jogar
     mensagem_uno = None
     if len(jogador.mao) == 1:
         if not jogador.disse_uno:
-            # Penalidade por não dizer UNO
-            cartas_penalidade = jogo_atual.comprar_cartas(2)
+            cartas_penalidade = jogador.comprar_carta(jogo_atual.baralho, qtd=2)
             jogador.mao.extend(cartas_penalidade)
             mensagem_uno = f"{jogador.nome} esqueceu de dizer UNO! Comprou 2 cartas como penalidade."
         else:
             mensagem_uno = f"{jogador.nome} declarou UNO corretamente!"
 
+    mensagem_extra = None
 
-    # Avança o turno normalmente
-    jogo_atual.proximo_turno()
-
-    # Se for +2, próximo jogador compra duas cartas e perde a vez
     if carta_removida.valor == "+2":
+        jogo_atual.pilha_descarte.append(carta_removida)
         vitima = jogo_atual.jogador_atual()
         vitima.comprar_carta(jogo_atual.baralho, qtd=2)
         mensagem_extra = f"{vitima.nome} comprou 2 cartas e perdeu a vez"
         jogo_atual.proximo_turno()
+
     elif carta_removida.valor == "pular":
-        vitima = jogo_atual.jogador_atual()
+        jogo_atual.pilha_descarte.append(carta_removida)
+        vitima_index = (jogo_atual.turno_atual + jogo_atual.direcao) % len(jogo_atual.jogadores)
+        vitima = jogo_atual.jogadores[vitima_index]
         mensagem_extra = f"{vitima.nome} perdeu a vez"
         jogo_atual.proximo_turno()
+        jogo_atual.proximo_turno()
+
     elif carta_removida.valor == "inverter":
+        jogo_atual.pilha_descarte.append(carta_removida)
         jogo_atual.direcao *= -1
         mensagem_extra = "Direção do jogo invertida"
+        if len(jogo_atual.jogadores) == 2:
+            jogo_atual.proximo_turno()
         jogo_atual.proximo_turno()
+
     elif carta_removida.valor == "coringa":
         if not jogada.nova_cor or jogada.nova_cor.lower() not in ["vermelho", "azul", "verde", "amarelo"]:
             raise HTTPException(status_code=400, detail="Cor inválida. Escolha entre: vermelho, azul, verde, amarelo.")
-        
-        # Atualiza a cor da carta para a escolhida
-        carta_removida.cor = jogada.nova_cor.lower()
 
-        mensagem_extra = f"Cor escolhida: {carta_removida.cor.capitalize()}"
+        carta_coringa = Carta(jogada.nova_cor.lower(), carta_removida.valor)
+        jogo_atual.pilha_descarte.append(carta_coringa)
+        mensagem_extra = f"Cor escolhida: {carta_coringa.cor.capitalize()}"
         jogo_atual.proximo_turno()
+
     elif carta_removida.valor == "+4":
         if not jogada.nova_cor or jogada.nova_cor.lower() not in ["vermelho", "azul", "verde", "amarelo"]:
             raise HTTPException(
@@ -156,21 +154,22 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
                 detail="Cor inválida. Escolha entre: vermelho, azul, verde, amarelo."
             )
 
-        carta_removida.cor = jogada.nova_cor.lower()
+        carta_especial = Carta(jogada.nova_cor.lower(), carta_removida.valor)
+        jogo_atual.pilha_descarte.append(carta_especial)
 
-        vitima = jogo_atual.jogador_atual()
+        proxima_vitima = (jogo_atual.turno_atual + jogo_atual.direcao) % len(jogo_atual.jogadores)
+        vitima = jogo_atual.jogadores[proxima_vitima]
 
-        # REGISTRA desafio pendente antes da vítima comprar cartas
         jogo_atual.registrar_desafio_mais_quatro(jogador, vitima, cor_pilha_anterior=carta_topo.cor)
-        mensagem_extra = f"{vitima.nome} pode desafiar o +4. Cor escolhida: {carta_removida.cor.capitalize()}"
+        mensagem_extra = f"{vitima.nome} pode desafiar o +4. Cor escolhida: {carta_especial.cor.capitalize()}"
+
     else:
-        mensagem_extra = None
-    
-    # Após a jogada, todos os jogadores devem ter 'disse_uno' resetado
+        jogo_atual.pilha_descarte.append(carta_removida)
+        jogo_atual.proximo_turno()
+
     for j in jogo_atual.jogadores:
         j.disse_uno = False
 
-    # Verifica a vitória
     if len(jogador.mao) == 0:
         return {
             "mensagem": f"{jogador.nome} venceu o jogo!",
@@ -179,7 +178,7 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
 
     resposta = {
         "mensagem": f"{nome_jogador} jogou {carta_removida}",
-        "novo_topo": str(carta_removida),
+        "novo_topo": str(jogo_atual.pilha_descarte[-1]),
         "proximo_jogador": jogo_atual.jogador_atual().nome,
         "efeito": mensagem_extra
     }
@@ -188,7 +187,6 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
         resposta["uno"] = mensagem_uno
 
     return resposta
-
 
 
 @app.post("/uno/{nome_jogador}")
