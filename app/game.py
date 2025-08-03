@@ -68,6 +68,7 @@ class JogoUNO:
         self.pilha_descarte = []
         self.direcao = 1  # 1 = horário, -1 = anti-horário
         self.turno_atual = 0
+        self.historico = []  #  Histórico de ações
         self.ultimo_desafio = None  # Guarda info temporária de desafio ao +4
 
 
@@ -102,6 +103,26 @@ class JogoUNO:
         self.baralho.cartas = recicladas
         self.pilha_descarte = [topo]
         return True
+
+    def registrar_log(self, acao: str, jogador: str, detalhes: dict):
+        self.historico.append({
+            "acao": acao,
+            "jogador": jogador,
+            "turno": self.jogador_atual().nome,
+            "estado": detalhes
+        })
+
+    def registrar_desafio(self, desafiador: str, resultado: str, cartas_compradas: int):
+        self.historico.append({
+            "acao": "desafio +4",
+            "jogador": desafiador,
+            "turno": self.jogador_atual().nome,
+            "estado": {
+                "resultado": resultado,
+                "cartas_compradas": cartas_compradas,
+                "proximo_jogador": self.jogador_atual().nome
+            }
+        })
 
     def registrar_desafio_mais_quatro(self, jogador_que_jogou, vitima, cor_pilha_anterior):
         self.ultimo_desafio = {

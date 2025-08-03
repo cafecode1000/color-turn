@@ -144,6 +144,17 @@ def comprar_carta(nome_jogador: str):
         jogo_atual.proximo_turno()
         mensagem += " e passou a vez"
 
+    jogo_atual.registrar_log(
+        acao="comprar",
+        jogador=nome_jogador,
+        detalhes={
+            "carta_comprada": str(carta) if carta else "Nenhuma",
+            "pode_jogar": pode_jogar,
+            "mao_apos": [str(c) for c in jogador.mao],
+            "proximo_jogador": jogo_atual.jogador_atual().nome
+        }
+    )
+
     return {
         "mensagem": mensagem,
         "carta_comprada": str(carta) if carta else "Nenhuma",
@@ -176,6 +187,9 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
 
     if carta_jogada.valor not in ["coringa", "+4"] and carta_jogada.cor != carta_topo.cor and carta_jogada.valor != carta_topo.valor:
         raise HTTPException(status_code=400, detail=f"Carta '{carta_jogada}' não pode ser jogada sobre '{carta_topo}'")
+
+    # <--- Captura a quantidade de cartas antes da jogada
+    tamanho_mao_antes = len(jogador.mao)
 
     carta_removida = jogador.jogar_carta(jogada.indice)
     mensagem_uno = None
@@ -240,8 +254,8 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
             "vencedor": jogador.nome
         }
 
-    # Penalidade por não dizer UNO (somente se ainda tiver 1 carta e não venceu)
-    if len(jogador.mao) == 1 and carta_removida.valor not in ["+4", "coringa"]:
+    # ✅ Penalidade só se veio de 2 cartas e ficou com 1
+    if tamanho_mao_antes == 2 and len(jogador.mao) == 1 and carta_removida.valor not in ["+4", "coringa"]:
         if not jogador.disse_uno:
             cartas_penalidade = jogador.comprar_carta(jogo_atual.baralho, qtd=2)
             mensagem_uno = f"{jogador.nome} esqueceu de dizer UNO! Comprou 2 cartas como penalidade."
@@ -258,7 +272,20 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
     if mensagem_uno:
         resposta["uno"] = mensagem_uno
 
+    jogo_atual.registrar_log(
+        acao="jogar",
+        jogador=nome_jogador,
+        detalhes={
+            "carta_jogada": str(carta_removida),
+            "efeito": mensagem_extra,
+            "mao_apos": [str(c) for c in jogador.mao],
+            "uno": mensagem_uno,
+            "proximo_jogador": jogo_atual.jogador_atual().nome
+        }
+    )
+
     return resposta
+
 
 @app.post("/uno/{nome_jogador}")
 def declarar_uno(nome_jogador: str):
@@ -302,4 +329,16 @@ def desafiar_mais_quatro(nome_jogador: str):
     jogo_atual.proximo_turno()
     jogo_atual.ultimo_desafio = None
 
+    jogo_atual.registrar_desafio(
+        desafiador=nome_jogador,
+        resultado=resultado,
+        cartas_compradas=4 if tinha_cor else 6
+    )
+
     return {"resultado": resultado, "proximo_jogador": jogo_atual.jogador_atual().nome}
+
+@app.get("/historico")
+def ver_historico():
+    if not jogo_atual:
+        raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
+    return jogo_atual.historico
