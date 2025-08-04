@@ -1,8 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from app.game import JogoUNO, Carta
 from fastapi import WebSocket, WebSocketDisconnect
 from app.websocket import manager
-
+from pydantic import BaseModel
 
 app = FastAPI(title="UNO Game API", version="0.1.0")
 
@@ -16,23 +16,8 @@ def novo_jogo(jogadores: list[str]):
     return {"mensagem": "Jogo iniciado!", "topo": str(jogo_atual.pilha_descarte[-1])}
 
 
-@app.get("/estado")
-def estado():
-    if not jogo_atual:
-        return {"erro": "Nenhum jogo em andamento"}
-    return {
-        "turno": jogo_atual.jogador_atual().nome,
-        "topo": str(jogo_atual.pilha_descarte[-1]),
-        "jogadores": {
-            j.nome: [str(c) for c in j.mao] for j in jogo_atual.jogadores
-        }
-    }
-
-from fastapi import HTTPException
-
-
 @app.post("/comprar/{nome_jogador}")
-def comprar_carta(nome_jogador: str):
+async def comprar_carta(nome_jogador: str):
     if not jogo_atual:
         raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
 
@@ -64,38 +49,44 @@ def comprar_carta(nome_jogador: str):
     )
 
     mensagem = f"{nome_jogador} comprou uma carta"
-    jogo_atual.proximo_turno()
-    mensagem += " e passou a vez"
+    if not pode_jogar:
+        jogo_atual.proximo_turno()
+        mensagem += " e passou a vez"
+
+    jogo_atual.registrar_log(
+        acao="comprar",
+        jogador=nome_jogador,
+        detalhes={
+            "carta_comprada": str(carta) if carta else "Nenhuma",
+            "pode_jogar": pode_jogar,
+            "mao_apos": [str(c) for c in jogador.mao],
+            "proximo_jogador": jogo_atual.jogador_atual().nome
+        }
+    )
+
+    await manager.enviar_mensagem(
+        f"📥 {nome_jogador} comprou uma carta" +
+        (" e passou a vez" if not pode_jogar else " e pode jogar")
+    )
 
     return {
         "mensagem": mensagem,
         "carta_comprada": str(carta) if carta else "Nenhuma",
         "pode_jogar": pode_jogar,
         "mao": [str(c) for c in jogador.mao],
-        "proximo_jogador": jogo_atual.jogador_atual().nome
+        "proximo_jogador": jogo_atual.jogador_atual().nome if not pode_jogar else nome_jogador
     }
 
-
-from pydantic import BaseModel
 
 class JogarCartaRequest(BaseModel):
     indice: int  # posição da carta na mão
     nova_cor: str | None = None  # usada apenas para cartas coringa
     
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from app.game import JogoUNO, Carta
-
 app = FastAPI(title="UNO Game API", version="0.1.0")
 
 jogo_atual = None
 
-@app.post("/novo-jogo")
-def novo_jogo(jogadores: list[str]):
-    global jogo_atual
-    jogo_atual = JogoUNO(jogadores)
-    return {"mensagem": "Jogo iniciado!", "topo": str(jogo_atual.pilha_descarte[-1])}
 
 @app.get("/estado")
 def estado():
@@ -108,6 +99,7 @@ def estado():
             j.nome: [str(c) for c in j.mao] for j in jogo_atual.jogadores
         }
     }
+
 
 @app.post("/comprar/{nome_jogador}")
 def comprar_carta(nome_jogador: str):
@@ -168,6 +160,7 @@ def comprar_carta(nome_jogador: str):
 class JogarCartaRequest(BaseModel):
     indice: int
     nova_cor: str | None = None
+
 
 @app.post("/jogar/{nome_jogador}")
 async def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
@@ -295,12 +288,11 @@ async def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
         (f"\n🎯 {mensagem_extra}" if mensagem_extra else "")
     )
 
-
     return resposta
 
 
 @app.post("/uno/{nome_jogador}")
-def declarar_uno(nome_jogador: str):
+async def declarar_uno(nome_jogador: str):
     if not jogo_atual:
         raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
 
@@ -312,12 +304,13 @@ def declarar_uno(nome_jogador: str):
         raise HTTPException(status_code=400, detail="Você só pode declarar UNO quando tiver exatamente 1 carta")
 
     jogador.disse_uno = True
+    await manager.enviar_mensagem(f"📢 {jogador.nome} declarou UNO!")
     return {"message": f"{jogador.nome} declarou UNO!"}
 
 
 # NOVA ROTA: desafio ao +4
 @app.post("/desafiar/{nome_jogador}")
-def desafiar_mais_quatro(nome_jogador: str):
+async def desafiar_mais_quatro(nome_jogador: str):
     if not jogo_atual or not jogo_atual.ultimo_desafio:
         raise HTTPException(status_code=400, detail="Nenhum desafio pendente")
 
@@ -347,7 +340,9 @@ def desafiar_mais_quatro(nome_jogador: str):
         cartas_compradas=4 if tinha_cor else 6
     )
 
+    await manager.enviar_mensagem(f"⚖️ Desafio ao +4: {resultado}")
     return {"resultado": resultado, "proximo_jogador": jogo_atual.jogador_atual().nome}
+
 
 @app.get("/historico")
 def ver_historico():
@@ -355,8 +350,6 @@ def ver_historico():
         raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
     return jogo_atual.historico
 
-from fastapi import WebSocket
-from app.websocket import manager
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
