@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from app.game import JogoUNO, Carta
+from fastapi import WebSocket, WebSocketDisconnect
+from app.websocket import manager
 
 
 app = FastAPI(title="UNO Game API", version="0.1.0")
@@ -168,7 +170,7 @@ class JogarCartaRequest(BaseModel):
     nova_cor: str | None = None
 
 @app.post("/jogar/{nome_jogador}")
-def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
+async def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
     if not jogo_atual:
         raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
 
@@ -284,6 +286,16 @@ def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
         }
     )
 
+     # Enviar notificação via WebSocket
+    print("🔈 Enviando WS:", f"{nome_jogador} jogou {carta_removida}")
+    # Enviar notificação via WebSocket
+    await manager.enviar_mensagem(
+        f"🎮 {nome_jogador} jogou {carta_removida}" +
+        (f"\n⚠️ {mensagem_uno}" if mensagem_uno else "") +
+        (f"\n🎯 {mensagem_extra}" if mensagem_extra else "")
+    )
+
+
     return resposta
 
 
@@ -342,3 +354,16 @@ def ver_historico():
     if not jogo_atual:
         raise HTTPException(status_code=400, detail="Nenhum jogo em andamento")
     return jogo_atual.historico
+
+from fastapi import WebSocket
+from app.websocket import manager
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.conectar(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await manager.enviar_mensagem(f"📢 Jogador disse: {data}")
+    except WebSocketDisconnect:
+        manager.desconectar(websocket)
