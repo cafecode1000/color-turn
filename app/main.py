@@ -1,10 +1,21 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from app.game import JogoUNO, Carta
-from fastapi import WebSocket, WebSocketDisconnect
 from app.websocket import manager
 from pydantic import BaseModel
+from pathlib import Path
+
 
 app = FastAPI(title="UNO Game API", version="0.1.0")
+
+# Montar a pasta static normalmente
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+def homepage():
+    html = Path("static/index.html").read_text(encoding="utf-8")
+    return HTMLResponse(content=html)
 
 # Guardar o jogo atual (temporário - depois usaremos algo mais robusto)
 jogo_atual = None
@@ -82,9 +93,6 @@ class JogarCartaRequest(BaseModel):
     indice: int  # posição da carta na mão
     nova_cor: str | None = None  # usada apenas para cartas coringa
     
-
-app = FastAPI(title="UNO Game API", version="0.1.0")
-
 jogo_atual = None
 
 
