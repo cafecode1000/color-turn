@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Teste WebSocket UNO</title>
+</head>
+<body>
+  <h2>🔌 WebSocket UNO</h2>
+  <input id="mensagem" placeholder="Digite sua mensagem" />
+  <button onclick="enviar()">Enviar</button>
+  <pre id="log"></pre>
+
+  <script>
+    const log = document.getElementById("log");
+    const ws = new WebSocket("ws://127.0.0.1:8000/ws");
+
+    ws.onopen = () => log.textContent += "✅ Conectado ao servidor\n";
+    ws.onmessage = (event) => {
+      log.textContent += "📨 " + event.data + "\n";
+    };
+    ws.onerror = (err) => {
+      log.textContent += "❌ Erro: " + err.message + "\n";
+    };
+
+    function enviar() {
+      const msg = document.getElementById("mensagem").value;
+      ws.send(msg);
+    }
+  </script>
+</body>
+</html>
