@@ -108,7 +108,7 @@ Agora o jogo envia mensagens automáticas para todos os jogadores conectados via
 
 3. Faça jogadas usando o Swagger ou outro cliente HTTP
 
-4. Veja os eventos aparecendo em tempo real nas abas conectadas
+4. Veja os eventos aparecendo em tempo real na(s) página(s) teste_ws.html.
 
 ---
 
@@ -124,7 +124,7 @@ Agora o jogo envia mensagens automáticas para todos os jogadores conectados via
 
 ## 🛠️ Melhorias Futuras
 
-- Criar frontend em HTML ou React para visualização em tempo real
+- Criar frontend em FastAPI visualização em tempo real
 - Persistência com banco de dados para partidas
 - Sistema de salas e autenticação de jogadores
 
