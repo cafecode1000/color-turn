@@ -52,8 +52,9 @@ uno_game/
 - **Detecção de vitória automática**
 - **Dizer "UNO" com 1 carta**
 - **Penalidade por esquecer "UNO"** (ver detalhes abaixo)
-- **Desafio ao +4 implementado!**
-- **WebSocket funcional com mensagens em tempo real ampliadas** ✅ (NOVO!)
+- **Desafio ao +4 com lógica completa e penalidades configuráveis**
+- **WebSocket funcional com mensagens em tempo real ampliadas** ✅
+- **Botões interativos "Desafiar / Não desafiar" no frontend** ✅
 
 ---
 
@@ -69,13 +70,16 @@ uno_game/
   Jogador joga uma carta da mão (notifica via WebSocket)
 
 - `POST /comprar/{nome_jogador}`  
-  Jogador compra uma carta, verifica se pode jogar (**agora também notifica via WebSocket**)
+  Jogador compra uma carta, verifica se pode jogar (**também notifica via WebSocket**)
 
 - `POST /uno/{nome_jogador}`  
   Jogador declara "UNO" ao ficar com uma única carta (**também notifica via WebSocket**)
 
 - `POST /desafiar/{nome_jogador}`  
   Jogador desafia o uso do +4 jogado contra ele (**também notifica via WebSocket**)
+
+- `POST /nao-desafiar/{nome_jogador}`  
+  Jogador opta por **não desafiar** o +4, recebendo 4 cartas como penalidade
 
 - `GET /historico`  
   Retorna o histórico de ações do jogo
@@ -92,33 +96,34 @@ Agora o jogo envia mensagens automáticas para todos os jogadores conectados via
 - Jogadas como: `🎮 b jogou Azul +2`
 - Penalidades: `⚠️ a esqueceu de dizer UNO! Comprou 2 cartas como penalidade.`
 - Efeitos especiais: `🎯 Direção do jogo invertida`, `🎯 Cor escolhida: Amarelo`
-- **NOVO**:
-  - `📥 Jogador comprou uma carta...`
-  - `📢 Jogador declarou UNO!`
-  - `⚖️ Desafio ao +4: ...`
+- `📥 Jogador comprou uma carta...`
+- `📢 Jogador declarou UNO!`
+- ⚖️ Desafio ao +4:
+  - Exibe se o desafio foi bem-sucedido ou não
+  - Penalidades aplicadas ao jogador correto
+  - Mensagem exibida para todos os conectados
 
-### ✅ Como testar localmente:
+---
 
-1. Suba o servidor:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
+## 🧪 Interação de desafio ao +4 no navegador
 
-2. Abra o arquivo `teste_ws.html` no navegador
+Ao jogar um +4, o jogador afetado verá no navegador:
 
-3. Faça jogadas usando o Swagger ou outro cliente HTTP
+⚖️ Você deseja desafiar o +4?  
+✅ Se sim, o outro jogador pode ser penalizado.  
+❌ Se não, você comprará 4 cartas — e continuará o jogo.
 
-4. Veja os eventos aparecendo em tempo real na(s) página(s) teste_ws.html.
+Essa decisão é feita através de dois botões que aparecem automaticamente se for sua vez de decidir.
 
 ---
 
 ## 🎯 Regra do "UNO!"
 
 - Se o jogador terminar sua jogada com **1 carta na mão**:
-  - Ele **pode** chamar `POST /uno/{nome_jogador}` **antes do fim de seu turno** (inclusive após um desafio ao +4).
-  - Se **não declarar**, será **penalizado com 2 cartas automaticamente** **após o turno terminar**, desde que não tenha vencido.
-  - Se declarar corretamente, o sistema registra e não aplica penalidade.
-  - O atributo `disse_uno` é **resetado automaticamente** ao final da jogada.
+  - Ele **pode** chamar `POST /uno/{nome_jogador}` **antes do fim de seu turno**
+  - Se **não declarar**, será **penalizado com 2 cartas automaticamente**
+  - Se declarar corretamente, o sistema registra e não aplica penalidade
+  - O atributo `disse_uno` é **resetado automaticamente** ao final da jogada
 
 ---
 

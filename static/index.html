@@ -7,9 +7,19 @@
 </head>
 <body>
   <h1>🎮 Bem-vindo ao Color Turn!</h1>
+
   <button onclick="connectWs()">Conectar ao WebSocket</button>
+
   <pre id="mensagens"></pre>
 
-  <script src="/static/script.js?v=1"></script>
+  <div id="desafio" style="display: none; background: #eee; padding: 10px; border-radius: 8px; margin-top: 20px;">
+    <p><strong>⚖️ Desafio ao +4:</strong> O jogador anterior usou um +4. Você acha que ele tinha outra carta possível para jogar?</p>
+    <p>✅ Se sim, desafie — ele poderá ser penalizado.<br>
+       ❌ Se não tiver certeza, melhor não desafiar — senão você pode receber 6 cartas!</p>
+    <button onclick="desafiar()">✅ Desafiar</button>
+    <button onclick="naoDesafiar()">❌ Não desafiar</button>
+  </div>
+
+  <script src="/static/script.js?v=2"></script>
 </body>
 </html>

@@ -223,3 +223,85 @@ async def declarar_uno(nome_jogador: str):
     jogador.disse_uno = True
     await manager.enviar_mensagem(f"📢 {jogador.nome} declarou UNO!")
     return {"message": f"{jogador.nome} declarou UNO!"}
+
+
+@app.post("/desafiar/{nome_jogador}")
+async def desafiar_mais_quatro(nome_jogador: str):
+    if not jogo_atual or not jogo_atual.ultimo_desafio:
+        raise HTTPException(status_code=400, detail="Nenhum desafio pendente")
+
+    desafio = jogo_atual.ultimo_desafio
+    if desafio["vitima"].nome != nome_jogador:
+        raise HTTPException(status_code=403, detail="Você não é a vítima do +4")
+
+    jogador = desafio["jogador_que_jogou"]
+    mao_original = desafio["mao_antes"]
+    cor_anterior = desafio["cor_anterior"]
+
+    # Verifica se havia carta compatível com a cor anterior antes de jogar o +4
+    tinha_opcao = any(c.cor == cor_anterior and c.cor != "preto" for c in mao_original)
+
+    if tinha_opcao:
+        # Jogador foi malandro: punição!
+        cartas = jogador.comprar_carta(jogo_atual.baralho, qtd=4)
+        resultado = f"Desafio bem-sucedido! {jogador.nome} comprou 4 cartas."
+        jogo_atual.ultimo_desafio = None
+        jogo_atual.proximo_turno()
+        jogo_atual.registrar_desafio(nome_jogador, resultado, 4)
+        await manager.enviar_mensagem(f"⚖️ {resultado}")
+        return {"resultado": resultado, "cartas_compradas": [str(c) for c in cartas]}
+    else:
+        # Desafio falhou: penalidade maior
+        cartas = desafio["vitima"].comprar_carta(jogo_atual.baralho, qtd=6)
+        resultado = f"Desafio falhou. {nome_jogador} comprou 6 cartas."
+        jogo_atual.ultimo_desafio = None
+        jogo_atual.proximo_turno()
+        jogo_atual.registrar_desafio(nome_jogador, resultado, 6)
+        await manager.enviar_mensagem(f"⚖️ {resultado}")
+        return {"resultado": resultado, "cartas_compradas": [str(c) for c in cartas]}
+
+
+
+@app.post("/nao-desafiar/{nome_jogador}")
+async def nao_desafiar(nome_jogador: str):
+    if not jogo_atual or not jogo_atual.ultimo_desafio:
+        raise HTTPException(status_code=400, detail="Nenhum desafio pendente")
+
+    desafio = jogo_atual.ultimo_desafio
+    if desafio["vitima"].nome != nome_jogador:
+        raise HTTPException(status_code=403, detail="Você não é a vítima do +4")
+
+    # Aplicar a penalidade de 4 cartas
+    cartas = desafio["vitima"].comprar_carta(jogo_atual.baralho, qtd=4)
+    jogo_atual.ultimo_desafio = None
+    jogo_atual.proximo_turno()
+
+    jogo_atual.registrar_log(
+        acao="nao-desafiar",
+        jogador=nome_jogador,
+        detalhes={
+            "comprou": [str(c) for c in cartas],
+            "proximo_jogador": jogo_atual.jogador_atual().nome
+        }
+    )
+
+    await manager.enviar_mensagem(
+        f"🟡 {nome_jogador} decidiu não desafiar o +4 e comprou 4 cartas."
+    )
+
+    return {
+        "mensagem": f"{nome_jogador} comprou 4 cartas por não desafiar o +4.",
+        "cartas_compradas": [str(c) for c in cartas],
+        "proximo_jogador": jogo_atual.jogador_atual().nome
+    }
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.conectar(websocket)
+    try:
+        while True:
+            # Manter a conexão ativa (poderia ler mensagens se quisesse)
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.desconectar(websocket)
