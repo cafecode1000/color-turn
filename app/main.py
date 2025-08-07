@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -169,7 +168,29 @@ async def jogar_carta(nome_jogador: str, jogada: JogarCartaRequest):
         jogo_atual.proximo_turno()
 
     if len(jogador.mao) == 0:
-        return {"mensagem": f"{jogador.nome} venceu o jogo!", "vencedor": jogador.nome}
+        jogo_atual.eliminar_jogador(jogador)
+        colocacao = len(jogo_atual.vencedores)  # 1 para o primeiro, etc.
+        mensagem_vitoria = f"{jogador.nome} terminou em {colocacao}º lugar!"
+
+        await manager.enviar_mensagem(f"🏆 {mensagem_vitoria}")
+
+        if len(jogo_atual.jogadores) == 1:
+            ultimo = jogo_atual.jogadores[0]
+            jogo_atual.vencedores.append(ultimo.nome)
+            await manager.enviar_mensagem(f"🏁 {ultimo.nome} ficou em último lugar.")
+            return {
+                "mensagem": mensagem_vitoria,
+                "fim": True,
+                "ranking": jogo_atual.vencedores
+            }
+
+        return {
+            "mensagem": mensagem_vitoria,
+            "colocacao": colocacao,
+            "ranking_parcial": jogo_atual.vencedores
+        }
+
+
 
     if tamanho_mao_antes == 2 and len(jogador.mao) == 1 and carta_removida.valor not in ["+4", "coringa"]:
         if not jogador.disse_uno:

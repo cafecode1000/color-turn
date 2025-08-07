@@ -19,16 +19,21 @@ function connectWs() {
     log.textContent += event.data + "\n";
 
     console.log("📨 Mensagem recebida:", event.data);
-    console.log("🧾 Comparando com jogador local:", jogadorLocal);
+    console.log("🤖 Comparando com jogador local:", jogadorLocal);
 
     if (event.data.includes("pode desafiar")) {
-      if (event.data.includes(jogadorLocal)) {
-        console.log("🎯 Exibindo botões de desafio");
+      const match = event.data.match(/(\w+) pode desafiar/);
+      console.log("🎯 Detectado possível alvo de desafio:", match ? match[1] : "nenhum");
+      console.log("🤖 Comparando com jogador local:", jogadorLocal);
+
+      if (match && match[1].trim().toLowerCase() === jogadorLocal.trim().toLowerCase()) {
+        console.log("✅ Jogador é o alvo! Exibindo botões...");
         document.getElementById("desafio").style.display = "block";
       } else {
-        console.log("⛔ Não é o jogador local que pode desafiar");
+        console.log("⛔ Outro jogador deve decidir sobre o desafio.");
       }
     }
+
   };
 }
 

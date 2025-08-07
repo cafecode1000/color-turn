@@ -70,7 +70,7 @@ class JogoUNO:
         self.turno_atual = 0
         self.historico = []  #  Histórico de ações
         self.ultimo_desafio = None  # Guarda info temporária de desafio ao +4
-
+        self.vencedores = [] # Lista com a ordem dos vencedores
 
         # Distribuir 7 cartas a cada jogador
         for jogador in self.jogadores:
@@ -83,6 +83,15 @@ class JogoUNO:
             primeira_carta = self.baralho.comprar()
         self.pilha_descarte.append(primeira_carta)
 
+    def eliminar_jogador(self, jogador):
+        if jogador in self.jogadores:
+            self.vencedores.append(jogador.nome)
+            self.jogadores.remove(jogador)
+            if self.turno_atual >= len(self.jogadores):
+                self.turno_atual = 0
+            return True
+        return False
+    
     def jogador_atual(self):
         return self.jogadores[self.turno_atual]
 

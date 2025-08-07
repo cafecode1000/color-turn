@@ -29,12 +29,14 @@ uno_game/
 │   ├── websocket.py    # Comunicação WebSocket em tempo real
 │   └── models.py       # Pydantic Models (requests/responses)
 │
+├── static/
+│   ├── index.html      # Página principal com interface WebSocket
+│   └── script.js       # Script JS com lógica do cliente
+│
 ├── tests/
 │   └── test_game.py    # Testes automatizados
 │
-├── venv/               # Ambiente virtual Python (não enviado ao GitHub)
 ├── requirements.txt    # Dependências (FastAPI, Uvicorn, websockets)
-├── teste_ws.html       # Cliente simples de teste WebSocket
 └── README.md           # Este arquivo
 ```
 
@@ -49,12 +51,12 @@ uno_game/
 - Jogador pode comprar 1 carta ao invés de jogar
 - Carta comprada só pode ser usada se compatível, senão perde a vez
 - Baralho se recicla automaticamente com a pilha de descarte (exceto carta do topo)
-- **Detecção de vitória automática**
+- **Detecção de vitória automática e múltiplos vencedores em ordem** ✅
 - **Dizer "UNO" com 1 carta**
 - **Penalidade por esquecer "UNO"** (ver detalhes abaixo)
-- **Desafio ao +4 com lógica completa e penalidades configuráveis**
+- **Desafio ao +4 com lógica completa e penalidades configuráveis** ✅
 - **WebSocket funcional com mensagens em tempo real ampliadas** ✅
-- **Botões interativos "Desafiar / Não desafiar" no frontend** ✅
+- **Botões interativos "Desafiar / Não desafiar" no frontend, exibidos apenas para o jogador correto** ✅
 
 ---
 
@@ -98,6 +100,8 @@ Agora o jogo envia mensagens automáticas para todos os jogadores conectados via
 - Efeitos especiais: `🎯 Direção do jogo invertida`, `🎯 Cor escolhida: Amarelo`
 - `📥 Jogador comprou uma carta...`
 - `📢 Jogador declarou UNO!`
+- `🏆 Jogador terminou em 1º, 2º, ... lugar`
+- `🏁 Último jogador foi automaticamente declarado`
 - ⚖️ Desafio ao +4:
   - Exibe se o desafio foi bem-sucedido ou não
   - Penalidades aplicadas ao jogador correto
@@ -113,7 +117,7 @@ Ao jogar um +4, o jogador afetado verá no navegador:
 ✅ Se sim, o outro jogador pode ser penalizado.  
 ❌ Se não, você comprará 4 cartas — e continuará o jogo.
 
-Essa decisão é feita através de dois botões que aparecem automaticamente se for sua vez de decidir.
+Essa decisão é feita através de dois botões que aparecem **somente para o jogador afetado**.
 
 ---
 
@@ -129,7 +133,7 @@ Essa decisão é feita através de dois botões que aparecem automaticamente se 
 
 ## 🛠️ Melhorias Futuras
 
-- Criar frontend em FastAPI visualização em tempo real
+- Criar frontend em FastAPI para visualização em tempo real
 - Persistência com banco de dados para partidas
 - Sistema de salas e autenticação de jogadores
 
@@ -146,7 +150,12 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Abra no navegador: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+### Acesso ao jogo:
+
+- Acesse [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) para abrir o Swagger e testar as rotas da API (como iniciar o jogo, jogar, comprar, etc.)
+- Acesse [http://127.0.0.1:8000](http://127.0.0.1:8000) em **várias janelas ou abas separadas do navegador**, cada uma representando um jogador distinto. Essas páginas escutam eventos em tempo real via WebSocket e mostram as ações durante a partida.
+
+> Dica: ao acessar a página principal, será solicitado que você informe o nome do jogador (ex: `a`, `b`, `c`). Digite corretamente para que a exibição dos botões e mensagens funcionem corretamente.
 
 ---
 
